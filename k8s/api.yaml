@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grs-service-llm
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: grs-service-llm }
+  template:
+    metadata:
+      labels: { app: grs-service-llm }
+    spec:
+      # If the GHCR package is private, create a pull secret and uncomment:
+      # imagePullSecrets:
+      #   - name: ghcr-pull
+      containers:
+        - name: api
+          # The tag is overridden in kustomization.yaml (CI bumps it to the commit SHA).
+          image: ghcr.io/gibrannreyestr/grs-service-llm
+          ports:
+            - containerPort: 8000
+          env:
+            - name: LLM_BASE_URL
+              value: http://ollama:11434/v1 # Service name, not localhost
+            - name: LLM_MODEL
+              value: llama3.2
+            - name: LLM_TIMEOUT
+              value: "120" # CPU inference is slow
+          readinessProbe:
+            httpGet: { path: /health, port: 8000 }
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /health, port: 8000 }
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          resources:
+            requests: { cpu: "100m", memory: 128Mi }
+            limits: { memory: 256Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grs-service-llm
+spec:
+  selector: { app: grs-service-llm }
+  ports:
+    - port: 80
+      targetPort: 8000

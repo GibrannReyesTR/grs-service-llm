@@ -1,0 +1,78 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ollama-data
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ollama
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate # RWO volume: the old pod must release it before the new one starts
+  selector:
+    matchLabels: { app: ollama }
+  template:
+    metadata:
+      labels: { app: ollama }
+    spec:
+      containers:
+        - name: ollama
+          image: ollama/ollama:latest
+          ports:
+            - containerPort: 11434
+          volumeMounts:
+            - name: data
+              mountPath: /root/.ollama
+          readinessProbe:
+            httpGet: { path: /, port: 11434 }
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /, port: 11434 }
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources:
+            requests: { cpu: "500m", memory: 2Gi }
+            limits: { memory: 6Gi }
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: ollama-data
+---
+# ClusterIP only: Ollama has no authentication and must not be exposed outside the cluster.
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama
+spec:
+  selector: { app: ollama }
+  ports:
+    - port: 11434
+      targetPort: 11434
+---
+# One-off job that downloads the model into the persistent volume.
+# To pull another model, change MODEL and delete the old Job (Job specs are immutable).
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ollama-pull-llama3-2
+spec:
+  backoffLimit: 6
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: pull
+          image: ollama/ollama:latest
+          env:
+            - name: OLLAMA_HOST
+              value: http://ollama:11434
+            - name: MODEL
+              value: llama3.2
+          command: ["sh", "-c", "until ollama list >/dev/null 2>&1; do sleep 3; done; ollama pull \"$MODEL\""]
