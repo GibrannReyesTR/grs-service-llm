@@ -1,0 +1,26 @@
+# Ollama runs on the Windows host (not in the cluster). This selector-less Service plus a manual
+# EndpointSlice gives the API a stable in-cluster name (`ollama-host`) for it.
+# If the host IP changes (Hyper-V Default Switch can change after a reboot), update the address below.
+# To run Ollama inside the cluster instead, see k8s/optional/ollama-incluster.yaml.
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama-host
+spec:
+  ports:
+    - port: 11434
+      targetPort: 11434
+---
+apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
+metadata:
+  name: ollama-host-1
+  labels:
+    kubernetes.io/service-name: ollama-host
+addressType: IPv4
+ports:
+  - port: 11434
+    protocol: TCP
+endpoints:
+  - addresses:
+      - 172.24.208.1 # Windows host address on the Multipass/Hyper-V Default Switch

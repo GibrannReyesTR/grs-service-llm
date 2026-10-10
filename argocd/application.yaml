@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: grs-service-llm
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/GibrannReyesTR/grs-service-llm.git
+    targetRevision: main
+    path: k8s
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: grs
+  syncPolicy:
+    automated:
+      prune: true # remove resources that are deleted from Git
+      selfHeal: true # revert manual changes made directly in the cluster
