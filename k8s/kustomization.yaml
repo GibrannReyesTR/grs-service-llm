@@ -3,7 +3,6 @@ kind: Kustomization
 namespace: grs
 resources:
   - namespace.yaml
-  - ollama-host.yaml
   - api.yaml
 images:
   - name: ghcr.io/gibrannreyestr/grs-service-llm

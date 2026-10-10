@@ -21,7 +21,7 @@ spec:
             - containerPort: 8000
           env:
             - name: LLM_BASE_URL
-              value: http://ollama-host:11434/v1 # Service name, not localhost (Ollama runs on the host)
+              value: http://172.24.208.1:11434/v1 # Windows host running Ollama (Hyper-V Default Switch address; update if it changes)
             - name: LLM_MODEL
               value: llama3.2
             - name: LLM_TIMEOUT
