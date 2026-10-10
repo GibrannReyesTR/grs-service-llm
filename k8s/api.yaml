@@ -10,9 +10,9 @@ spec:
     metadata:
       labels: { app: grs-service-llm }
     spec:
-      # If the GHCR package is private, create a pull secret and uncomment:
-      # imagePullSecrets:
-      #   - name: ghcr-pull
+      # Pull secret created manually in the cluster (never commit it to Git).
+      imagePullSecrets:
+        - name: ghcr-pull
       containers:
         - name: api
           # The tag is overridden in kustomization.yaml (CI bumps it to the commit SHA).
